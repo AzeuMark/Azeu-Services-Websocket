@@ -1,0 +1,13 @@
++++ Add NAVIGATE to website command to navigate the user to provided url from node js. 
++++ Add UPTIME value in the card, maybe get the uptime from Task Manager CPU uptime value.
++++ Add Bypass Time button in the card allowing the desktop to run passed curfew time via node js.
++++ Add Shutdown/Restart/Bypass Curfew to all PC in node js.
++++ Add limit for curfew, 01-12 in hours and 00-59 in minutes.
++++ Add limit and string conditions in Smoke and Curfew dialog textboxes.
++++ Fix the watchdog do not run multiple watchdog if there is already a watchdog running.
++++ Fix the password changing logic in the application disable the new and confirm textbox if current password is incorrect.
+
++Fixed I guess? Fix app when shutting down it shows a dialog of error so maybe detect if windows is shutting down or restarting then close our app in advance safely.
++++ Fix the countdown dialog no longer starts counting down when countdown form is not shown on the screen but Anti AFK is ON/Checked.
+Fix the Remote server where if on stealth mode it no longer reconnects to the websocket regularly. The connection dies, I have to open Form1 again.
+In node js websocket instead of using the PC date and time use the websocket server time instead.

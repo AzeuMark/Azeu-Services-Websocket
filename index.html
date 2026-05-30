@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Azeu Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="page">
+        <nav class="top-nav">
+            <div class="nav-left">
+                <div class="nav-brand">Azeu Monitoring</div>
+                <a class="nav-link active" href="#">Dashboard</a>
+            </div>
+            <div class="nav-right">
+                <button class="btn-theme" id="themeToggle" type="button">🌙 Dark</button>
+            </div>
+        </nav>
+
+        <header>
+            <h1>Azeu Monitoring System</h1>
+            <div id="connectionStatus" style="font-size: 0.8em; color: var(--success);">Server Active</div>
+        </header>
+
+        <!-- GLOBAL CONTROLS -->
+        <div class="global-bar">
+            <span class="global-label">Broadcast Commands:</span>
+            <div class="global-actions">
+                <button class="btn-global" onclick="openMsgModal('ALL')">💬 Message All</button>
+                <button class="btn-global" onclick="openNavModal('ALL')">🌐 Navigate All</button>
+                <button class="btn-global" onclick="confirmGlobalRefresh()">🖼️ Refresh All Screens</button>
+                <button class="btn-global" style="color: var(--warning);" onclick="commitGlobalBypass()">🔓 Bypass All Locked</button>
+                <button class="btn-global" id="global-restart" style="color: #ff8a80;" onclick="confirmGlobalPower('RESTART')">🔄 Restart All</button>
+                <button class="btn-global" id="global-shutdown" style="background: var(--danger);" onclick="confirmGlobalPower('SHUTDOWN')">🛑 Shutdown All</button>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <span class="status-badge active">● Active PCs</span>
+        </div>
+        <div id="active-container" class="grid"></div>
+
+        <div class="section-header">
+            <span class="status-badge inactive">● Inactive PCs</span>
+        </div>
+        <div id="inactive-container" class="grid"></div>
+    </div>
+
+    <!-- Modals -->
+    <div id="msgModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="msgTargetName">Send Message</h2>
+            <textarea id="msgInput" placeholder="Enter message here..."></textarea>
+            <div style="display:flex; justify-content: flex-end; gap: 10px;">
+                <button onclick="closeModal('msgModal')" style="background: #444;">Cancel</button>
+                <button onclick="commitSendMessage()" style="background: var(--success); padding: 10px 25px;">Send Now</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="navModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="navTargetName">Navigate PC to URL</h2>
+            <input type="text" id="navInput" placeholder="https://">
+            <div style="display:flex; justify-content: flex-end; gap: 10px;">
+                <button onclick="closeModal('navModal')" style="background: #444;">Cancel</button>
+                <button onclick="commitNavigate()" style="background: var(--nav); padding: 10px 25px;">Go!</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="lightbox" class="lightbox-overlay">
+        <div class="lightbox-panel">
+            <div class="lightbox-header">
+                <span class="lightbox-title" id="lightboxTitle">Screenshot</span>
+                <div class="lightbox-actions">
+                    <button class="btn-shot lightbox-download" id="downloadBtn">💾 Download</button>
+                    <button class="lightbox-close" onclick="document.getElementById('lightbox').classList.remove('active')">✕</button>
+                </div>
+            </div>
+            <div class="lightbox-body">
+                <img id="lightboxImg" alt="Screenshot">
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
