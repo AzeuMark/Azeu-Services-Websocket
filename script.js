@@ -44,6 +44,61 @@ if (themeToggle) {
 }
 
 /* ───────────────────────────────────────────
+   MOBILE HAMBURGER MENU
+─────────────────────────────────────────── */
+
+const hamburgerBtn  = document.getElementById('hamburgerBtn');
+const sidebar       = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+
+function openSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.add('open');
+    if (hamburgerBtn) hamburgerBtn.classList.add('active');
+    if (sidebarOverlay) sidebarOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.remove('open');
+    if (hamburgerBtn) hamburgerBtn.classList.remove('active');
+    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function toggleSidebar() {
+    if (sidebar && sidebar.classList.contains('open')) {
+        closeSidebar();
+    } else {
+        openSidebar();
+    }
+}
+
+if (hamburgerBtn) hamburgerBtn.addEventListener('click', toggleSidebar);
+if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+
+// Auto-close sidebar when a nav action is clicked on mobile
+if (sidebar) {
+    sidebar.querySelectorAll('.nav-item, .nav-btn').forEach(el => {
+        el.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        });
+    });
+}
+
+// Close sidebar on window resize past mobile breakpoint
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+        closeSidebar();
+    }
+});
+
+/* ───────────────────────────────────────────
    MANILA TIME DISPLAY
 ─────────────────────────────────────────── */
 function updateManilaTime() {
@@ -635,6 +690,7 @@ if (lightboxEl) {
 
 window.addEventListener('keydown', (e) => {
     if (e.key === "Escape") {
+        closeSidebar();
         closeModal('msgModal');
         closeModal('navModal');
         closeModal('customConfirmModal');
