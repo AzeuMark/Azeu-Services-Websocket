@@ -44,6 +44,33 @@ if (themeToggle) {
 }
 
 /* ───────────────────────────────────────────
+   MANILA TIME DISPLAY
+─────────────────────────────────────────── */
+function updateManilaTime() {
+    const timeSpan = document.getElementById('manila-time');
+    if (!timeSpan) return;
+
+    const options = {
+        timeZone: 'Asia/Manila',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    };
+    
+    try {
+        const now = new Date();
+        const timeString = new Intl.DateTimeFormat('en-US', options).format(now);
+        timeSpan.textContent = `${timeString} • Manila`;
+    } catch (err) {
+        console.error('Error formatting Manila time:', err);
+    }
+}
+
+updateManilaTime();
+setInterval(updateManilaTime, 1000);
+
+/* ───────────────────────────────────────────
    TOAST NOTIFICATIONS  (UI-only helper)
 ─────────────────────────────────────────── */
 
@@ -261,21 +288,6 @@ function createPCCard(pc) {
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
                 <div class="menu-content" id="menu-${pc.name}">
-                    <button onclick="cmd('${pc.name}', 'SCREENSHOT')">
-                        <i class="bi bi-camera"></i> Refresh Screenshot
-                    </button>
-                    <button onclick="openMsgModal('${pc.name}')">
-                        <i class="bi bi-chat-dots"></i> Send Message
-                    </button>
-                    <button onclick="openNavModal('${pc.name}')">
-                        <i class="bi bi-globe"></i> Navigate URL
-                    </button>
-                    <div style="height:1px; background:var(--border); margin:3px 8px;"></div>
-                    <button class="warning-text"
-                        onclick="commitBypass('${pc.name}')"
-                        style="display: ${pc.isLocked ? 'flex' : 'none'};">
-                        <i class="bi bi-unlock"></i> Bypass Curfew
-                    </button>
                     <button class="danger-text" onclick="confirmPower('${pc.name}', 'RESTART')">
                         <i class="bi bi-arrow-clockwise"></i> Restart PC
                     </button>
@@ -312,11 +324,19 @@ function createPCCard(pc) {
         </div>
 
         <div class="card-actions">
+            ${pc.isLocked ? `
+            <button class="btn-action warning-bg-solid" onclick="commitBypass('${pc.name}')" style="grid-column: span 3; margin-bottom: 2px;">
+                <i class="bi bi-unlock"></i> Bypass Curfew
+            </button>
+            ` : ''}
             <button class="btn-action primary" onclick="cmd('${pc.name}', 'SCREENSHOT')">
                 <i class="bi bi-camera"></i> Refresh
             </button>
             <button class="btn-action" onclick="openMsgModal('${pc.name}')">
                 <i class="bi bi-chat-dots"></i> Message
+            </button>
+            <button class="btn-action" onclick="openNavModal('${pc.name}')">
+                <i class="bi bi-globe"></i> Navigate
             </button>
         </div>
     `;
@@ -358,8 +378,66 @@ function applyCooldown(buttons) {
    BROADCAST LOGIC  (emitters UNCHANGED)
 ─────────────────────────────────────────── */
 
-function confirmGlobalPower(action) {
-    if (confirm(`⚠️ DANGER: Trigger ${action} on ALL connected PCs?`)) {
+/* ───────────────────────────────────────────
+   MODERN CONFIRM DIALOG SYSTEM
+─────────────────────────────────────────── */
+let activeConfirmPromise = null;
+
+function showConfirmModal(title, message, isDanger = false) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('customConfirmModal');
+        const titleEl = document.getElementById('confirmModalTitle');
+        const messageEl = document.getElementById('confirmModalMessage');
+        const confirmBtn = document.getElementById('confirmModalBtn');
+        const cancelBtn = document.getElementById('confirmModalCancelBtn');
+
+        if (!modal || !titleEl || !messageEl || !confirmBtn || !cancelBtn) {
+            resolve(confirm(message));
+            return;
+        }
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        if (isDanger) {
+            confirmBtn.className = 'btn-action danger-bg-solid';
+            confirmBtn.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> Confirm';
+        } else {
+            confirmBtn.className = 'btn-action primary';
+            confirmBtn.innerHTML = 'Confirm';
+        }
+
+        modal.style.display = 'flex';
+        confirmBtn.focus();
+
+        const cleanup = (result) => {
+            modal.style.display = 'none';
+            activeConfirmPromise = null;
+            resolve(result);
+        };
+
+        confirmBtn.onclick = () => cleanup(true);
+        cancelBtn.onclick = () => cleanup(false);
+
+        activeConfirmPromise = {
+            resolve: cleanup
+        };
+    });
+}
+
+/* ───────────────────────────────────────────
+   BROADCAST LOGIC  (emitters UNCHANGED)
+─────────────────────────────────────────── */
+
+async function confirmGlobalPower(action) {
+    const isDanger = true;
+    const confirmed = await showConfirmModal(
+        `⚠️ Trigger Global ${action}`,
+        `Are you sure you want to trigger a system ${action.toLowerCase()} on ALL connected PCs? This action cannot be undone.`,
+        isDanger
+    );
+    
+    if (confirmed) {
         cmd('ALL', action);
         const targetId = action === 'RESTART' ? 'global-restart' : 'global-shutdown';
         applyCooldown([document.getElementById(targetId)]);
@@ -367,15 +445,25 @@ function confirmGlobalPower(action) {
     }
 }
 
-function confirmGlobalRefresh() {
-    if (confirm("Refresh screenshots on ALL connected PCs?")) {
+async function confirmGlobalRefresh() {
+    const confirmed = await showConfirmModal(
+        "Refresh All Screenshots",
+        "Request new screenshots from all connected PCs?"
+    );
+    
+    if (confirmed) {
         cmd('ALL', 'SCREENSHOT');
         showToast('Screenshot refresh requested for all PCs', 'info');
     }
 }
 
-function commitGlobalBypass() {
-    if (confirm("Unlock ALL currently locked PCs?")) {
+async function commitGlobalBypass() {
+    const confirmed = await showConfirmModal(
+        "Unlock All PCs",
+        "Bypass curfew and unlock all currently locked PCs?"
+    );
+    
+    if (confirmed) {
         cmd('ALL', 'BYPASS_CURFEW');
         showToast('Curfew bypass sent to all locked PCs', 'success');
     }
@@ -395,15 +483,27 @@ function toggleMenu(pc, event) {
     if (!isShowing) menu.classList.add('show');
 }
 
-function commitBypass(pc) {
-    if (confirm(`Remotely unlock ${pc}?`)) {
+async function commitBypass(pc) {
+    const confirmed = await showConfirmModal(
+        `Unlock ${pc}`,
+        `Unlock and bypass curfew restrictions on remote machine ${pc}?`
+    );
+    
+    if (confirmed) {
         cmd(pc, 'BYPASS_CURFEW');
         showToast(`Bypass sent to ${pc}`, 'success');
     }
 }
 
-function confirmPower(pc, action) {
-    if (confirm(`Trigger ${action} on ${pc}?`)) {
+async function confirmPower(pc, action) {
+    const isDanger = action === 'SHUTDOWN' || action === 'RESTART';
+    const confirmed = await showConfirmModal(
+        `${action} ${pc}`,
+        `Are you sure you want to trigger a ${action.toLowerCase()} on ${pc}?`,
+        isDanger
+    );
+    
+    if (confirmed) {
         cmd(pc, action);
         const targetId = action === 'RESTART' ? `restart-${pc}` : `shutdown-${pc}`;
         applyCooldown([document.getElementById(targetId)]);
@@ -507,14 +607,71 @@ window.onclick = function(event) {
     if (!event.target.matches('.dropdown-toggle') && !event.target.closest('.dropdown-toggle')) {
         document.querySelectorAll('.menu-content').forEach(m => m.classList.remove('show'));
     }
+
+    // Modal background auto-close
+    const overlays = ['msgModal', 'navModal', 'customConfirmModal'];
+    overlays.forEach(id => {
+        const modal = document.getElementById(id);
+        if (modal && event.target === modal) {
+            closeModal(id);
+            if (id === 'customConfirmModal' && activeConfirmPromise) {
+                activeConfirmPromise.resolve(false);
+            }
+        }
+    });
 };
+
+// Auto-close lightbox when clicking the overlay background
+const lightboxEl = document.getElementById('lightbox');
+if (lightboxEl) {
+    lightboxEl.addEventListener('click', (e) => {
+        if (e.target === lightboxEl) {
+            lightboxEl.classList.remove('active');
+            currentLightboxPC = "";
+            currentLightboxSrc = "";
+        }
+    });
+}
 
 window.addEventListener('keydown', (e) => {
     if (e.key === "Escape") {
         closeModal('msgModal');
         closeModal('navModal');
+        closeModal('customConfirmModal');
+        if (activeConfirmPromise) {
+            activeConfirmPromise.resolve(false);
+        }
         document.getElementById('lightbox').classList.remove('active');
         currentLightboxPC  = "";
         currentLightboxSrc = "";
+    }
+
+    if (e.key === "Enter") {
+        // 1. Custom Confirm Modal Enter Key
+        const confirmModal = document.getElementById('customConfirmModal');
+        if (confirmModal && confirmModal.style.display === 'flex' && activeConfirmPromise) {
+            e.preventDefault();
+            activeConfirmPromise.resolve(true);
+        }
+
+        // 2. Message Modal Enter Key (except Shift+Enter)
+        const msgModal = document.getElementById('msgModal');
+        if (msgModal && msgModal.style.display === 'flex') {
+            const msgInput = document.getElementById('msgInput');
+            if (document.activeElement === msgInput && !e.shiftKey) {
+                e.preventDefault();
+                commitSendMessage();
+            }
+        }
+
+        // 3. Navigate Modal Enter Key
+        const navModal = document.getElementById('navModal');
+        if (navModal && navModal.style.display === 'flex') {
+            const navInput = document.getElementById('navInput');
+            if (document.activeElement === navInput) {
+                e.preventDefault();
+                commitNavigate();
+            }
+        }
     }
 });

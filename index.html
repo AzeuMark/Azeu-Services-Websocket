@@ -61,6 +61,10 @@
 
             <!-- Top header -->
             <header class="top-header">
+                <div class="header-time-wrap">
+                    <i class="bi bi-clock"></i>
+                    <span id="manila-time">--:--:-- -- • Manila</span>
+                </div>
                 <div class="header-search">
                     <i class="bi bi-search"></i>
                     <input type="text" id="pc-search" placeholder="Search connected PCs...">
@@ -157,6 +161,22 @@
             </div>
             <div class="lightbox-body">
                 <img id="lightboxImg" alt="Screenshot">
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="customConfirmModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="confirmModalTitle">Confirm Action</h2>
+            <p id="confirmModalMessage" class="confirm-modal-msg">Are you sure you want to proceed?</p>
+            <div class="modal-footer">
+                <button class="btn-action" id="confirmModalCancelBtn">
+                    Cancel
+                </button>
+                <button class="btn-action primary" id="confirmModalBtn">
+                    Confirm
+                </button>
             </div>
         </div>
     </div>
