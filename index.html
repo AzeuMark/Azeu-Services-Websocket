@@ -2,39 +2,68 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Azeu Admin — Remote PC Management Dashboard">
     <title>Azeu Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body>
     <div class="dashboard-layout">
+
+        <!-- ===================== SIDEBAR ===================== -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <i class="bi bi-shield-check-fill sidebar-logo"></i>
-                <span class="sidebar-brand">Azeu Admin</span>
+                <div class="sidebar-logo-wrap">
+                    <i class="bi bi-shield-check-fill sidebar-logo"></i>
+                </div>
+                <div class="sidebar-brand-wrap">
+                    <span class="sidebar-brand">Azeu Admin</span>
+                    <span class="sidebar-version">Remote Manager</span>
+                </div>
             </div>
-            
+
             <nav class="sidebar-nav">
                 <div class="sidebar-label">Main Menu</div>
-                <a href="#" class="nav-item active"><i class="bi bi-speedometer2"></i> Dashboard</a>
-                
+                <a href="#" class="nav-item active" id="nav-dashboard">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+
                 <div class="sidebar-label">Global Actions</div>
-                <button class="nav-btn" onclick="openMsgModal('ALL')"><i class="bi bi-chat-dots"></i> Message All</button>
-                <button class="nav-btn" onclick="openNavModal('ALL')"><i class="bi bi-globe"></i> Navigate All</button>
-                <button class="nav-btn" onclick="confirmGlobalRefresh()"><i class="bi bi-camera"></i> Refresh Screens</button>
-                <button class="nav-btn" onclick="commitGlobalBypass()"><i class="bi bi-unlock"></i> Bypass All</button>
-                
+                <button class="nav-btn" id="nav-msg-all" onclick="openMsgModal('ALL')">
+                    <i class="bi bi-chat-dots"></i> Message All
+                </button>
+                <button class="nav-btn" id="nav-nav-all" onclick="openNavModal('ALL')">
+                    <i class="bi bi-globe"></i> Navigate All
+                </button>
+                <button class="nav-btn" id="nav-refresh-all" onclick="confirmGlobalRefresh()">
+                    <i class="bi bi-camera"></i> Refresh Screens
+                </button>
+                <button class="nav-btn" id="nav-bypass-all" onclick="commitGlobalBypass()">
+                    <i class="bi bi-unlock"></i> Bypass All
+                </button>
+
                 <div class="sidebar-label">System</div>
-                <button class="nav-btn danger-text" id="global-restart" onclick="confirmGlobalPower('RESTART')"><i class="bi bi-arrow-clockwise"></i> Restart All</button>
-                <button class="nav-btn danger-bg" id="global-shutdown" onclick="confirmGlobalPower('SHUTDOWN')"><i class="bi bi-power"></i> Shutdown All</button>
+                <button class="nav-btn danger-text" id="global-restart" onclick="confirmGlobalPower('RESTART')">
+                    <i class="bi bi-arrow-clockwise"></i> Restart All
+                </button>
+                <button class="nav-btn danger-bg" id="global-shutdown" onclick="confirmGlobalPower('SHUTDOWN')">
+                    <i class="bi bi-power"></i> Shutdown All
+                </button>
             </nav>
         </aside>
 
+        <!-- ===================== MAIN ===================== -->
         <main class="main-content">
+
+            <!-- Top header -->
             <header class="top-header">
                 <div class="header-search">
                     <i class="bi bi-search"></i>
-                    <input type="text" placeholder="Search connected PCs...">
+                    <input type="text" id="pc-search" placeholder="Search connected PCs...">
                 </div>
                 <div class="header-actions">
                     <div id="connectionStatus" class="status-indicator online">
@@ -46,56 +75,84 @@
                 </div>
             </header>
 
+            <!-- Content -->
             <div class="content-body">
+
+                <!-- Active PCs -->
                 <div class="section">
                     <div class="section-title">
-                        <i class="bi bi-pc-display-horizontal"></i> Active PCs
+                        <i class="bi bi-pc-display-horizontal"></i>
+                        Active PCs
                         <span class="badge badge-success" id="active-count">0</span>
+                        <div class="section-divider"></div>
                     </div>
                     <div id="active-container" class="grid"></div>
                 </div>
 
+                <!-- Inactive PCs -->
                 <div class="section">
                     <div class="section-title">
-                        <i class="bi bi-pc-display"></i> Inactive PCs
+                        <i class="bi bi-pc-display"></i>
+                        Inactive PCs
                         <span class="badge badge-secondary" id="inactive-count">0</span>
+                        <div class="section-divider"></div>
                     </div>
                     <div id="inactive-container" class="grid"></div>
                 </div>
+
             </div>
         </main>
     </div>
 
-    <!-- Modals -->
+    <!-- ===================== MODALS ===================== -->
+
+    <!-- Message Modal -->
     <div id="msgModal" class="modal-overlay">
         <div class="modal-content">
             <h2 id="msgTargetName"><i class="bi bi-chat-dots"></i> Send Message</h2>
             <textarea id="msgInput" placeholder="Enter your message to the user..."></textarea>
             <div class="modal-footer">
-                <button class="btn-action" onclick="closeModal('msgModal')">Cancel</button>
-                <button class="btn-action primary" onclick="commitSendMessage()">Send Message</button>
+                <button class="btn-action" id="msg-cancel-btn" onclick="closeModal('msgModal')">
+                    Cancel
+                </button>
+                <button class="btn-action primary" id="msg-send-btn" onclick="commitSendMessage()">
+                    <i class="bi bi-send"></i> Send Message
+                </button>
             </div>
         </div>
     </div>
 
+    <!-- Navigate Modal -->
     <div id="navModal" class="modal-overlay">
         <div class="modal-content">
             <h2 id="navTargetName"><i class="bi bi-globe"></i> Navigate PC to URL</h2>
             <input type="text" id="navInput" placeholder="https://example.com">
             <div class="modal-footer">
-                <button class="btn-action" onclick="closeModal('navModal')">Cancel</button>
-                <button class="btn-action primary" onclick="commitNavigate()">Navigate Now</button>
+                <button class="btn-action" id="nav-cancel-btn" onclick="closeModal('navModal')">
+                    Cancel
+                </button>
+                <button class="btn-action primary" id="nav-go-btn" onclick="commitNavigate()">
+                    <i class="bi bi-arrow-right-circle"></i> Navigate Now
+                </button>
             </div>
         </div>
     </div>
 
+    <!-- Screenshot Lightbox -->
     <div id="lightbox" class="lightbox-overlay">
         <div class="lightbox-panel">
             <div class="lightbox-header">
-                <span class="lightbox-title" id="lightboxTitle"><i class="bi bi-image"></i> Screenshot</span>
+                <span class="lightbox-title" id="lightboxTitle">
+                    <i class="bi bi-image"></i> Screenshot
+                </span>
                 <div class="lightbox-actions">
-                    <button class="btn-action primary" id="downloadBtn"><i class="bi bi-download"></i> Download</button>
-                    <button class="btn-close-modal" onclick="document.getElementById('lightbox').classList.remove('active')"><i class="bi bi-x-lg"></i></button>
+                    <button class="btn-action primary" id="downloadBtn">
+                        <i class="bi bi-download"></i> Download
+                    </button>
+                    <button class="btn-close-modal" id="lightbox-close-btn"
+                        onclick="document.getElementById('lightbox').classList.remove('active')">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                 </div>
             </div>
             <div class="lightbox-body">
@@ -103,6 +160,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Toast container -->
+    <div id="toast-container"></div>
 
     <script src="script.js"></script>
 </body>

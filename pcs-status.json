@@ -2,10 +2,10 @@
   "pcs": [
     {
       "name": "AZEU-PC-X",
-      "status": "inactive",
-      "lastScreenshot": "AZEU-PC-X-May 30, 2026-(06_04_23 pm).jpg",
-      "lastSeen": "2026-05-30T10:52:48.948Z",
-      "connected": false
+      "status": "active",
+      "lastScreenshot": "AZEU-PC-X-May 30, 2026-(07_23_08 pm).jpg",
+      "lastSeen": "2026-05-30T11:23:08.286Z",
+      "connected": true
     },
     {
       "name": "AZEUOTIN",
@@ -15,5 +15,5 @@
       "connected": false
     }
   ],
-  "lastUpdated": "2026-05-30T10:52:48.948Z"
+  "lastUpdated": "2026-05-30T11:23:08.286Z"
 }

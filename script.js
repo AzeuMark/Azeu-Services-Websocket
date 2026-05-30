@@ -1,16 +1,29 @@
+/* ===========================================
+   AZEU DASHBOARD — CLIENT SCRIPT
+   WebSocket events & emitters are UNCHANGED.
+   Only UI helpers and rendering are enhanced.
+   =========================================== */
+
 const ws = new WebSocket(`ws://${window.location.host}`);
-const activeContainer = document.getElementById('active-container') || document.getElementById('container');
+const activeContainer   = document.getElementById('active-container') || document.getElementById('container');
 const inactiveContainer = document.getElementById('inactive-container');
-let currentTargetPC = "";
+
+let currentTargetPC   = "";
 let currentLightboxPC = "";
 let currentLightboxSrc = "";
 const pcStatusMap = new Map(); // Track active/inactive status
 const COOLDOWN_MS = 5000;
 const themeToggle = document.getElementById('themeToggle');
 
+/* ───────────────────────────────────────────
+   THEME
+─────────────────────────────────────────── */
+
 function updateThemeToggle(theme) {
     if (!themeToggle) return;
-    themeToggle.innerHTML = theme === 'light' ? '<i class="bi bi-moon-stars-fill"></i>' : '<i class="bi bi-sun-fill"></i>';
+    themeToggle.innerHTML = theme === 'light'
+        ? '<i class="bi bi-moon-stars-fill"></i>'
+        : '<i class="bi bi-sun-fill"></i>';
 }
 
 function setTheme(theme) {
@@ -19,7 +32,7 @@ function setTheme(theme) {
     updateThemeToggle(theme);
 }
 
-const savedTheme = localStorage.getItem('theme');
+const savedTheme  = localStorage.getItem('theme');
 const initialTheme = savedTheme === 'light' ? 'light' : 'dark';
 setTheme(initialTheme);
 
@@ -30,7 +43,36 @@ if (themeToggle) {
     });
 }
 
-// Load PC status from JSON database
+/* ───────────────────────────────────────────
+   TOAST NOTIFICATIONS  (UI-only helper)
+─────────────────────────────────────────── */
+
+const TOAST_ICONS = {
+    success: 'bi bi-check-circle-fill',
+    error:   'bi bi-x-circle-fill',
+    info:    'bi bi-info-circle-fill',
+    warning: 'bi bi-exclamation-triangle-fill',
+};
+
+function showToast(message, type = 'info', duration = 3000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<i class="${TOAST_ICONS[type] || TOAST_ICONS.info}"></i><span>${message}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('removing');
+        toast.addEventListener('animationend', () => toast.remove(), { once: true });
+    }, duration);
+}
+
+/* ───────────────────────────────────────────
+   PC STATUS DATABASE  (unchanged logic)
+─────────────────────────────────────────── */
+
 async function loadPCStatusFromDB() {
     try {
         const response = await fetch('/api/pcs-status');
@@ -42,15 +84,14 @@ async function loadPCStatusFromDB() {
     }
 }
 
-// Display inactive PCs from database
 async function displayInactivePCs() {
     if (!inactiveContainer) return;
-    const statusList = await loadPCStatusFromDB();
+    const statusList  = await loadPCStatusFromDB();
     const activePCNames = new Set(Array.from(pcStatusMap.keys()));
-    
+
     inactiveContainer.innerHTML = '';
     let count = 0;
-    
+
     statusList.forEach(pc => {
         if (!activePCNames.has(pc.name) && pc.status === 'inactive') {
             const card = createInactivePCCard(pc);
@@ -58,23 +99,28 @@ async function displayInactivePCs() {
             count++;
         }
     });
-    
+
     const inactiveCount = document.getElementById('inactive-count');
     if (inactiveCount) inactiveCount.innerText = count;
-    
-    // Show empty state if no inactive PCs
+
     if (inactiveContainer.children.length === 0) {
-        inactiveContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 30px;">No inactive PCs</div>';
+        inactiveContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="bi bi-pc-display"></i>
+                <p>No inactive PCs</p>
+            </div>`;
     }
 }
 
 function createInactivePCCard(pc) {
     const card = document.createElement('div');
     card.className = 'card inactive-card';
-    
-    const lastSeenDate = pc.lastSeen ? new Date(pc.lastSeen).toLocaleString() : 'Never';
-    const screenshotPath = pc.lastScreenshot ? `/screenshots/${pc.lastScreenshot}?t=${Date.now()}` : '';
-    
+
+    const lastSeenDate  = pc.lastSeen ? new Date(pc.lastSeen).toLocaleString() : 'Never';
+    const screenshotPath = pc.lastScreenshot
+        ? `/screenshots/${pc.lastScreenshot}?t=${Date.now()}`
+        : '';
+
     card.innerHTML = `
         <div class="card-header">
             <div class="pc-info">
@@ -82,28 +128,33 @@ function createInactivePCCard(pc) {
                 <div class="pc-status-label"><div class="dot"></div> Offline</div>
             </div>
         </div>
-        
+
         <div class="card-stats">
-            <div class="stat-item" style="grid-column: span 2;">
+            <div class="stat-item stat-span">
                 <div class="stat-label">Last Seen</div>
                 <div class="stat-value">${lastSeenDate}</div>
             </div>
         </div>
 
         <div class="screenshot-container" onclick="openLightboxFromCard('${pc.name}')">
-            ${screenshotPath ? `<img id="inactive-img-${pc.name}" src="${screenshotPath}" alt="Last screenshot">` : `<div style="height:100%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:0.8rem;">No Screenshot</div>`}
+            ${screenshotPath
+                ? `<img id="inactive-img-${pc.name}" src="${screenshotPath}" alt="Last screenshot">`
+                : `<div class="empty-state" style="padding:16px;">
+                       <i class="bi bi-camera-video-off" style="font-size:1.4rem;"></i>
+                       <p>No Screenshot</p>
+                   </div>`}
             <div class="screenshot-overlay"><i class="bi bi-zoom-in"></i> View Last Capture</div>
         </div>
 
         <div class="card-actions">
-            ${screenshotPath ? `
-                <button class="btn-action primary" style="grid-column: span 2;" id="downloadBtn-${pc.name}">
-                    <i class="bi bi-download"></i> Download Last Capture
-                </button>
-            ` : ''}
+            ${screenshotPath
+                ? `<button class="btn-action primary" style="grid-column: span 2;" id="downloadBtn-${pc.name}">
+                       <i class="bi bi-download"></i> Download Last Capture
+                   </button>`
+                : ''}
         </div>
     `;
-    
+
     if (screenshotPath) {
         setTimeout(() => {
             const downloadBtn = document.getElementById(`downloadBtn-${pc.name}`);
@@ -117,9 +168,13 @@ function createInactivePCCard(pc) {
             }
         }, 0);
     }
-    
+
     return card;
 }
+
+/* ───────────────────────────────────────────
+   WEBSOCKET  (all emitters UNCHANGED)
+─────────────────────────────────────────── */
 
 ws.onopen = () => ws.send(JSON.stringify({ type: "DASHBOARD_LOGIN" }));
 
@@ -130,30 +185,32 @@ ws.onmessage = (e) => {
         if (!activeContainer) return;
         activeContainer.innerHTML = '';
         pcStatusMap.clear();
-        
+
         data.pcs.forEach(pc => {
             pcStatusMap.set(pc.name, { isActive: true, lastScreenshot: pc.fileName });
             const card = createPCCard(pc);
             activeContainer.appendChild(card);
         });
-        
+
         const activeCount = document.getElementById('active-count');
         if (activeCount) activeCount.innerText = data.pcs.length;
 
         if (activeContainer.children.length === 0) {
-            activeContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 30px;">No active PCs</div>';
+            activeContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="bi bi-wifi-off"></i>
+                    <p>No active PCs connected</p>
+                </div>`;
         }
-        
+
         displayInactivePCs();
     }
 
     if (data.type === "STATUS_UPDATE") {
         const timerEl = document.getElementById(`timer-${data.pc_name}`);
         const uptimeEl = document.getElementById(`uptime-${data.pc_name}`);
-        const menuContainer = document.getElementById(`menu-container-${data.pc_name}`);
-        if (timerEl) timerEl.innerText = data.countdown;
+        if (timerEl)  timerEl.innerText  = data.countdown;
         if (uptimeEl) uptimeEl.innerText = data.uptime;
-        // In the new UI, the menu is always there but we can hide/show the locked status if needed
     }
 
     if (data.type === "SCREENSHOT_DATA") {
@@ -165,16 +222,17 @@ ws.onmessage = (e) => {
             }
         }
 
-        if (currentLightboxPC === data.pc_name && document.getElementById('lightbox').classList.contains('active')) {
+        if (currentLightboxPC === data.pc_name &&
+            document.getElementById('lightbox').classList.contains('active')) {
             const lightboxImg = document.getElementById('lightboxImg');
             const downloadBtn = document.getElementById('downloadBtn');
-            lightboxImg.src = data.image;
+            lightboxImg.src  = data.image;
             currentLightboxSrc = data.image;
             if (downloadBtn) {
                 downloadBtn.onclick = () => {
                     const a = document.createElement('a');
-                    a.href = currentLightboxSrc;
-                    a.download = `${currentLightboxPC}_Screenshot.jpg`;
+                    a.href      = currentLightboxSrc;
+                    a.download  = `${currentLightboxPC}_Screenshot.jpg`;
                     a.click();
                 };
             }
@@ -182,9 +240,13 @@ ws.onmessage = (e) => {
     }
 };
 
+/* ───────────────────────────────────────────
+   CARD RENDERING
+─────────────────────────────────────────── */
+
 function createPCCard(pc) {
-    const card = document.createElement('div');
-    card.id = `pc-${pc.name}`;
+    const card   = document.createElement('div');
+    card.id      = `pc-${pc.name}`;
     card.className = 'card';
     const imgSrc = pc.fileName ? `/screenshots/${pc.fileName}?t=${Date.now()}` : '';
 
@@ -195,15 +257,31 @@ function createPCCard(pc) {
                 <div class="pc-status-label"><div class="dot"></div> Online</div>
             </div>
             <div class="card-dropdown">
-                <button class="dropdown-toggle" onclick="toggleMenu('${pc.name}', event)"><i class="bi bi-three-dots-vertical"></i></button>
+                <button class="dropdown-toggle" onclick="toggleMenu('${pc.name}', event)">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
                 <div class="menu-content" id="menu-${pc.name}">
-                    <button onclick="cmd('${pc.name}', 'SCREENSHOT')"><i class="bi bi-camera"></i> Refresh Screenshot</button>
-                    <button onclick="openMsgModal('${pc.name}')"><i class="bi bi-chat-dots"></i> Send Message</button>
-                    <button onclick="openNavModal('${pc.name}')"><i class="bi bi-globe"></i> Navigate URL</button>
-                    <div style="height:1px; background:var(--border); margin:4px 0;"></div>
-                    <button onclick="commitBypass('${pc.name}')" style="color: var(--warning); display: ${pc.isLocked ? 'flex' : 'none'};"><i class="bi bi-unlock"></i> Bypass Curfew</button>
-                    <button onclick="confirmPower('${pc.name}', 'RESTART')" class="danger-text"><i class="bi bi-arrow-clockwise"></i> Restart PC</button>
-                    <button onclick="confirmPower('${pc.name}', 'SHUTDOWN')" class="danger-text"><i class="bi bi-power"></i> Shutdown PC</button>
+                    <button onclick="cmd('${pc.name}', 'SCREENSHOT')">
+                        <i class="bi bi-camera"></i> Refresh Screenshot
+                    </button>
+                    <button onclick="openMsgModal('${pc.name}')">
+                        <i class="bi bi-chat-dots"></i> Send Message
+                    </button>
+                    <button onclick="openNavModal('${pc.name}')">
+                        <i class="bi bi-globe"></i> Navigate URL
+                    </button>
+                    <div style="height:1px; background:var(--border); margin:3px 8px;"></div>
+                    <button class="warning-text"
+                        onclick="commitBypass('${pc.name}')"
+                        style="display: ${pc.isLocked ? 'flex' : 'none'};">
+                        <i class="bi bi-unlock"></i> Bypass Curfew
+                    </button>
+                    <button class="danger-text" onclick="confirmPower('${pc.name}', 'RESTART')">
+                        <i class="bi bi-arrow-clockwise"></i> Restart PC
+                    </button>
+                    <button class="danger-text" onclick="confirmPower('${pc.name}', 'SHUTDOWN')">
+                        <i class="bi bi-power"></i> Shutdown PC
+                    </button>
                 </div>
             </div>
         </div>
@@ -217,24 +295,38 @@ function createPCCard(pc) {
                 <div class="stat-label">PC Uptime</div>
                 <div class="stat-value uptime" id="uptime-${pc.name}">${pc.uptime || '-'}</div>
             </div>
-            <div class="stat-item" style="grid-column: span 2; border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
+            <div class="stat-item stat-span stat-divider">
                 <div class="stat-label">Last Sync</div>
-                <div class="stat-value" style="font-size: 0.75rem;"><i class="bi bi-clock"></i> <span id="date-${pc.name}">${pc.lastDate}</span> | <span id="time-${pc.name}">${pc.lastTime}</span></div>
+                <div class="stat-value" style="font-size: 0.74rem;">
+                    <i class="bi bi-clock" style="opacity:0.6;"></i>
+                    <span id="date-${pc.name}">${pc.lastDate}</span>
+                    &nbsp;|&nbsp;
+                    <span id="time-${pc.name}">${pc.lastTime}</span>
+                </div>
             </div>
         </div>
 
         <div class="screenshot-container" onclick="openLightboxFromCard('${pc.name}')">
-            <img id="img-${pc.name}" src="${imgSrc || 'https://via.placeholder.com/320x180?text=No+Capture'}">
+            <img id="img-${pc.name}" src="${imgSrc || 'https://via.placeholder.com/320x180/0c1627/3b82f6?text=No+Capture'}">
             <div class="screenshot-overlay"><i class="bi bi-zoom-in"></i> View Screen</div>
         </div>
 
         <div class="card-actions">
-            <button class="btn-action primary" onclick="cmd('${pc.name}', 'SCREENSHOT')"><i class="bi bi-camera"></i> Refresh</button>
-            <button class="btn-action" onclick="openMsgModal('${pc.name}')"><i class="bi bi-chat-dots"></i> Message</button>
+            <button class="btn-action primary" onclick="cmd('${pc.name}', 'SCREENSHOT')">
+                <i class="bi bi-camera"></i> Refresh
+            </button>
+            <button class="btn-action" onclick="openMsgModal('${pc.name}')">
+                <i class="bi bi-chat-dots"></i> Message
+            </button>
         </div>
     `;
+
     return card;
 }
+
+/* ───────────────────────────────────────────
+   COMMANDS  (emitters UNCHANGED)
+─────────────────────────────────────────── */
 
 function cmd(pc, action, payload = "") {
     ws.send(JSON.stringify({ type: "COMMAND", target_pc: pc, action: action, payload: payload }));
@@ -248,8 +340,8 @@ function applyCooldown(buttons) {
         if (btn.dataset.cooldown === "true") return;
         btn.dataset.cooldown = "true";
         if (!btn.dataset.originalText) btn.dataset.originalText = btn.innerHTML;
-        btn.innerText = "Cooling 5s";
-        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Cooling 5s';
+        btn.disabled  = true;
     });
 
     setTimeout(() => {
@@ -262,43 +354,52 @@ function applyCooldown(buttons) {
     }, COOLDOWN_MS);
 }
 
-/* BROADCAST LOGIC */
+/* ───────────────────────────────────────────
+   BROADCAST LOGIC  (emitters UNCHANGED)
+─────────────────────────────────────────── */
+
 function confirmGlobalPower(action) {
     if (confirm(`⚠️ DANGER: Trigger ${action} on ALL connected PCs?`)) {
         cmd('ALL', action);
         const targetId = action === 'RESTART' ? 'global-restart' : 'global-shutdown';
         applyCooldown([document.getElementById(targetId)]);
+        showToast(`${action} sent to all PCs`, 'warning');
     }
 }
 
 function confirmGlobalRefresh() {
     if (confirm("Refresh screenshots on ALL connected PCs?")) {
         cmd('ALL', 'SCREENSHOT');
+        showToast('Screenshot refresh requested for all PCs', 'info');
     }
 }
 
 function commitGlobalBypass() {
     if (confirm("Unlock ALL currently locked PCs?")) {
         cmd('ALL', 'BYPASS_CURFEW');
+        showToast('Curfew bypass sent to all locked PCs', 'success');
     }
 }
 
-/* INDIVIDUAL LOGIC */
+/* ───────────────────────────────────────────
+   INDIVIDUAL LOGIC  (emitters UNCHANGED)
+─────────────────────────────────────────── */
+
 function toggleMenu(pc, event) {
     if (event) event.stopPropagation();
-    const menu = document.getElementById(`menu-${pc}`);
+    const menu     = document.getElementById(`menu-${pc}`);
     const isShowing = menu.classList.contains('show');
-    
-    // Close all other menus
+
     document.querySelectorAll('.menu-content').forEach(m => m.classList.remove('show'));
-    
-    if (!isShowing) {
-        menu.classList.add('show');
-    }
+
+    if (!isShowing) menu.classList.add('show');
 }
 
 function commitBypass(pc) {
-    if (confirm(`Remotely unlock ${pc}?`)) cmd(pc, 'BYPASS_CURFEW');
+    if (confirm(`Remotely unlock ${pc}?`)) {
+        cmd(pc, 'BYPASS_CURFEW');
+        showToast(`Bypass sent to ${pc}`, 'success');
+    }
 }
 
 function confirmPower(pc, action) {
@@ -306,13 +407,18 @@ function confirmPower(pc, action) {
         cmd(pc, action);
         const targetId = action === 'RESTART' ? `restart-${pc}` : `shutdown-${pc}`;
         applyCooldown([document.getElementById(targetId)]);
+        showToast(`${action} sent to ${pc}`, 'warning');
     }
 }
 
-/* MODAL LOGIC */
+/* ───────────────────────────────────────────
+   MODAL LOGIC  (emitters UNCHANGED)
+─────────────────────────────────────────── */
+
 function openMsgModal(pc) {
     currentTargetPC = pc;
-    document.getElementById('msgTargetName').innerText = pc === 'ALL' ? "Broadcast Message to ALL" : `Message to: ${pc}`;
+    document.getElementById('msgTargetName').innerHTML =
+        `<i class="bi bi-chat-dots"></i> ${pc === 'ALL' ? 'Broadcast Message to ALL' : `Message to: ${pc}`}`;
     document.getElementById('msgInput').value = "";
     document.getElementById('msgModal').style.display = 'flex';
     document.getElementById('msgInput').focus();
@@ -320,18 +426,22 @@ function openMsgModal(pc) {
 
 function openNavModal(pc) {
     currentTargetPC = pc;
-    document.getElementById('navTargetName').innerText = pc === 'ALL' ? "Navigate ALL PCs to URL" : `Navigate PC: ${pc}`;
+    document.getElementById('navTargetName').innerHTML =
+        `<i class="bi bi-globe"></i> ${pc === 'ALL' ? 'Navigate ALL PCs to URL' : `Navigate PC: ${pc}`}`;
     document.getElementById('navInput').value = "https://";
     document.getElementById('navModal').style.display = 'flex';
     document.getElementById('navInput').focus();
 }
 
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
 
 function commitSendMessage() {
     const text = document.getElementById('msgInput').value;
     if (text.trim() === "") return;
     cmd(currentTargetPC, 'MESSAGE', text);
+    showToast(`Message sent to ${currentTargetPC === 'ALL' ? 'all PCs' : currentTargetPC}`, 'success');
     closeModal('msgModal');
 }
 
@@ -339,8 +449,13 @@ function commitNavigate() {
     const url = document.getElementById('navInput').value;
     if (url.trim() === "" || url === "https://") return;
     cmd(currentTargetPC, 'NAVIGATE', url);
+    showToast(`Navigate command sent to ${currentTargetPC === 'ALL' ? 'all PCs' : currentTargetPC}`, 'info');
     closeModal('navModal');
 }
+
+/* ───────────────────────────────────────────
+   LIGHTBOX  (unchanged logic)
+─────────────────────────────────────────── */
 
 function openLightboxFromCard(pc) {
     const img = document.getElementById(`img-${pc}`) || document.getElementById(`inactive-img-${pc}`);
@@ -350,36 +465,56 @@ function openLightboxFromCard(pc) {
 
 function openLightbox(pc, src) {
     if (!src || src.includes('placeholder')) return;
-    const lightbox = document.getElementById('lightbox');
-    const img = document.getElementById('lightboxImg');
-    const title = document.getElementById('lightboxTitle');
-    
-    currentLightboxPC = pc;
+    const lightbox   = document.getElementById('lightbox');
+    const img        = document.getElementById('lightboxImg');
+    const title      = document.getElementById('lightboxTitle');
+
+    currentLightboxPC  = pc;
     currentLightboxSrc = src;
-    img.src = src;
+    img.src  = src;
     title.innerHTML = `<i class="bi bi-image"></i> Screenshot: ${pc}`;
     lightbox.classList.add('active');
-    
+
     document.getElementById('downloadBtn').onclick = () => {
         const a = document.createElement('a');
-        a.href = currentLightboxSrc;
+        a.href     = currentLightboxSrc;
         a.download = `${pc}_Screenshot.jpg`;
         a.click();
     };
 }
 
+/* ───────────────────────────────────────────
+   SEARCH FILTER  (UI-only, no WS changes)
+─────────────────────────────────────────── */
+
+const searchInput = document.getElementById('pc-search');
+if (searchInput) {
+    searchInput.addEventListener('input', () => {
+        const q = searchInput.value.toLowerCase().trim();
+        document.querySelectorAll('.card').forEach(card => {
+            const name = card.querySelector('.pc-name');
+            if (!name) return;
+            card.style.display = (!q || name.textContent.toLowerCase().includes(q)) ? '' : 'none';
+        });
+    });
+}
+
+/* ───────────────────────────────────────────
+   GLOBAL CLICK & KEYDOWN
+─────────────────────────────────────────── */
+
 window.onclick = function(event) {
     if (!event.target.matches('.dropdown-toggle') && !event.target.closest('.dropdown-toggle')) {
         document.querySelectorAll('.menu-content').forEach(m => m.classList.remove('show'));
     }
-}
+};
 
 window.addEventListener('keydown', (e) => {
-    if (e.key === "Escape") { 
-        closeModal('msgModal'); 
-        closeModal('navModal'); 
-        document.getElementById('lightbox').classList.remove('active'); 
-        currentLightboxPC = "";
+    if (e.key === "Escape") {
+        closeModal('msgModal');
+        closeModal('navModal');
+        document.getElementById('lightbox').classList.remove('active');
+        currentLightboxPC  = "";
         currentLightboxSrc = "";
     }
 });
