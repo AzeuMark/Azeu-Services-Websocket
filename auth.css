@@ -1,0 +1,439 @@
+/* =======================================================
+   AZEU AUTH PAGE — DESIGN TOKENS & SYSTEM
+   ======================================================= */
+
+:root {
+    color-scheme: dark;
+
+    /* Base Colors */
+    --bg-main:         #060b17;
+    --bg-card:         #0c1627;
+    --bg-card-raised:  #101e33;
+
+    /* Borders */
+    --border:          rgba(59, 130, 246, 0.09);
+    --border-strong:   rgba(59, 130, 246, 0.25);
+
+    /* Typography */
+    --text-primary:    #dce8ff;
+    --text-secondary:  #4e6e9e;
+    --text-muted:      #2b3f60;
+
+    /* Accent */
+    --accent:          #3b82f6;
+    --accent-hover:    #2563eb;
+    --accent-dim:      rgba(59, 130, 246, 0.12);
+    
+    /* Alert / Success */
+    --success:         #10b981;
+    --danger:          #f43f5e;
+
+    /* Shadows & Neumorphism */
+    --neu-out:
+        5px 5px 16px rgba(0, 0, 0, 0.55),
+        -3px -3px 10px rgba(18, 45, 90, 0.12);
+    --neu-in:
+        inset 2px 2px 7px rgba(0, 0, 0, 0.5),
+        inset -2px -2px 5px rgba(18, 45, 90, 0.1);
+        
+    --shadow-glow:     0 0 24px rgba(59, 130, 246, 0.15);
+
+    /* Border Radius */
+    --radius-xl:       1.25rem;
+    --radius-lg:       0.875rem;
+    --radius-md:       0.625rem;
+    --radius-sm:       0.375rem;
+
+    /* Motion */
+    --ease:            cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring:     cubic-bezier(0.34, 1.56, 0.64, 1);
+    --transition:      all 0.22s var(--ease);
+}
+
+[data-theme="light"] {
+    color-scheme: light;
+
+    --bg-main:        #edf2ff;
+    --bg-card:        #f0f5ff;
+    --bg-card-raised: #f8faff;
+
+    --border:         rgba(59, 130, 246, 0.12);
+    --border-strong:  rgba(59, 130, 246, 0.3);
+
+    --text-primary:   #0d1b3e;
+    --text-secondary: #4a6499;
+    --text-muted:     #8faccc;
+
+    --accent:         #2563eb;
+    --accent-hover:   #1d4ed8;
+    --accent-dim:     rgba(37, 99, 235, 0.1);
+    
+    --success:        #059669;
+    --danger:         #e11d48;
+
+    --neu-out:
+        5px 5px 14px rgba(158, 185, 235, 0.65),
+        -3px -3px 9px rgba(255, 255, 255, 0.95);
+    --neu-in:
+        inset 2px 2px 7px rgba(158, 185, 235, 0.5),
+        inset -2px -2px 5px rgba(255, 255, 255, 0.85);
+        
+    --shadow-glow:     0 0 24px rgba(37, 99, 235, 0.12);
+}
+
+/* =======================================================
+   RESET & SETUP
+   ======================================================= */
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    padding: 20px;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s var(--ease);
+}
+
+/* =======================================================
+   GLOWING DECORATIVE BACKGROUND ORBS
+   ======================================================= */
+
+.glow-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(140px);
+    z-index: 0;
+    opacity: 0.15;
+    pointer-events: none;
+    transition: background-color 0.3s var(--ease);
+}
+
+.orb-1 {
+    width: 400px;
+    height: 400px;
+    background: var(--accent);
+    top: -100px;
+    left: -100px;
+}
+
+.orb-2 {
+    width: 500px;
+    height: 500px;
+    background: #06b6d4;
+    bottom: -150px;
+    right: -150px;
+}
+
+[data-theme="light"] .glow-orb {
+    opacity: 0.25;
+    filter: blur(160px);
+}
+
+/* =======================================================
+   THEME TOGGLER (TOP RIGHT CORNER)
+   ======================================================= */
+
+.auth-theme-wrap {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 10;
+}
+
+.theme-toggle-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--neu-out-sm);
+    transition: var(--transition);
+}
+
+.theme-toggle-btn i {
+    font-size: 1.2rem;
+}
+
+.theme-toggle-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+    box-shadow: var(--neu-out);
+    transform: translateY(-1px);
+}
+
+.theme-toggle-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--neu-in);
+}
+
+/* =======================================================
+   AUTH CARD CONTAINER
+   ======================================================= */
+
+.auth-container {
+    width: 100%;
+    max-width: 460px;
+    z-index: 2;
+    animation: authFadeIn 0.5s var(--ease-spring) both;
+}
+
+.auth-card {
+    background: var(--bg-card-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 40px;
+    box-shadow: var(--neu-out), var(--shadow-glow);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease), background-color 0.3s var(--ease);
+}
+
+/* =======================================================
+   LOGO & HEADER STYLES
+   ======================================================= */
+
+.logo-container {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    box-shadow: var(--neu-out-sm);
+    position: relative;
+}
+
+.logo-container::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    border: 1px dashed var(--accent);
+    opacity: 0.3;
+    animation: rotateDashed 20s linear infinite;
+}
+
+.auth-logo-img {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+}
+
+.auth-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+}
+
+.auth-subtitle {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    padding: 0 10px;
+    margin-bottom: 32px;
+}
+
+/* =======================================================
+   6-DIGIT DIGIT FIELDS
+   ======================================================= */
+
+.pin-inputs-wrap {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.pin-input {
+    width: 52px;
+    height: 60px;
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: var(--neu-in);
+    outline: none;
+    transition: var(--transition);
+}
+
+.pin-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3), var(--neu-in);
+    transform: scale(1.04);
+}
+
+[data-theme="light"] .pin-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(37, 99, 235, 0.25), var(--neu-in);
+}
+
+/* =======================================================
+   ERROR MESSAGE STYLES
+   ======================================================= */
+
+.error-msg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--danger);
+    font-size: 0.82rem;
+    font-weight: 500;
+    margin-bottom: 24px;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: var(--transition);
+}
+
+.error-msg.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* =======================================================
+   SUBMIT BUTTON & STATES
+   ======================================================= */
+
+.submit-btn {
+    width: 100%;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--accent) 0%, #1d6fdb 100%);
+    border: none;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
+    transition: var(--transition);
+}
+
+.submit-btn:hover:not(:disabled) {
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
+}
+
+.submit-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.submit-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Loading state spinner override */
+.submit-btn.loading {
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    color: var(--text-secondary);
+    box-shadow: var(--neu-out-sm);
+}
+.submit-btn.loading::after {
+    content: "";
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--text-muted);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spinner 0.6s linear infinite;
+    margin-left: 8px;
+}
+.submit-btn.loading .btn-text {
+    font-size: 0.95rem;
+}
+.submit-btn.loading i {
+    display: none;
+}
+
+/* Success state color */
+.submit-btn.success {
+    background: var(--success);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+    color: #ffffff;
+}
+
+/* =======================================================
+   ANIMATIONS
+   ======================================================= */
+
+@keyframes authFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spinner {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes rotateDashed {
+    to { transform: rotate(360deg); }
+}
+
+.auth-card.shake {
+    animation: shake 0.4s ease-in-out;
+    border-color: var(--danger);
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.25), var(--neu-out);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+}
+
+/* =======================================================
+   RESPONSIVE DESIGN
+   ======================================================= */
+
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 32px 20px;
+    }
+    
+    .pin-input {
+        width: 44px;
+        height: 52px;
+        font-size: 1.4rem;
+    }
+    
+    .auth-title {
+        font-size: 1.4rem;
+    }
+}

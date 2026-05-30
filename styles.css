@@ -205,45 +205,22 @@ body {
 }
 
 .sidebar-logo-wrap {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--cyan) 100%);
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-accent);
     flex-shrink: 0;
     position: relative;
-    overflow: hidden;
-}
-
-/* Animated shimmer on logo */
-.sidebar-logo-wrap::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
-    animation: shimmerSlide 3s ease-in-out infinite;
-}
-
-@keyframes shimmerSlide {
-    0%   { transform: translateX(-100%) rotate(20deg); }
-    50%, 100% { transform: translateX(200%) rotate(20deg); }
 }
 
 .sidebar-logo-img {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     object-fit: contain;
     position: relative;
     z-index: 1;
-    filter: brightness(0) invert(1);
     image-rendering: auto;
-}
-
-[data-theme="light"] .sidebar-logo-img {
-    filter: brightness(0) invert(1);
 }
 
 /* Close button — only visible on mobile */

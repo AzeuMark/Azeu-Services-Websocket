@@ -731,3 +731,8 @@ window.addEventListener('keydown', (e) => {
         }
     }
 });
+
+function logout() {
+    localStorage.removeItem('azeu_dashboard_auth');
+    window.location.replace('auth.html');
+}
