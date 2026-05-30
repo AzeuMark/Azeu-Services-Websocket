@@ -1092,7 +1092,7 @@ body {
 .card-actions {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    gap: 6px;
 }
 
 /* ===========================
@@ -1100,23 +1100,26 @@ body {
    =========================== */
 
 .btn-action {
-    padding: 9px 12px;
+    padding: 9px 8px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     background: var(--bg-card);
     color: var(--text-secondary);
-    font-size: 0.75rem;
+    font-size: 0.73rem;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 5px;
     transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), border-color 0.18s var(--ease), color 0.18s var(--ease), background 0.18s var(--ease);
     box-shadow: var(--neu-out-sm);
     letter-spacing: 0.2px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .btn-action i { font-size: 0.86rem; }
