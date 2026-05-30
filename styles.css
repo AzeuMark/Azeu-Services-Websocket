@@ -558,6 +558,110 @@ body {
     color: var(--accent); 
 }
 
+/* ===========================
+   HEADER SORT DROPDOWN
+   =========================== */
+.header-sort {
+    position: relative;
+    display: inline-block;
+}
+
+.sort-toggle-btn {
+    height: 38px;
+    padding: 0 16px;
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition);
+    box-shadow: var(--neu-out-sm);
+}
+
+[data-theme="light"] .sort-toggle-btn {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.sort-toggle-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+    box-shadow: var(--neu-out);
+    transform: translateY(-1px);
+}
+
+.sort-toggle-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--neu-in);
+}
+
+.sort-menu-content {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--bg-card-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    min-width: 200px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    z-index: 100;
+    overflow: hidden;
+    animation: dropdownIn 0.22s var(--ease-spring) both;
+}
+
+.sort-menu-content.show {
+    display: block;
+}
+
+.sort-menu-content button {
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: var(--transition);
+}
+
+.sort-menu-content button:hover {
+    background: var(--accent-dim);
+    color: var(--text-primary);
+}
+
+.sort-menu-content button.active {
+    color: var(--accent);
+    font-weight: 700;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+[data-theme="light"] .sort-menu-content button.active {
+    background: rgba(37, 99, 235, 0.06);
+}
+
+@keyframes dropdownIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
 .header-search input[type="text"],
 .header-search input[type="text"]:focus {
     background: transparent !important;
@@ -1710,5 +1814,15 @@ textarea::placeholder, input[type="text"]::placeholder {
 
     .section-title {
         font-size: 0.82rem;
+    }
+}
+
+/* ── Sort Button Responsive Collapse ── */
+@media (max-width: 500px) {
+    .sort-toggle-btn .sort-label-text {
+        display: none;
+    }
+    .sort-toggle-btn {
+        padding: 0 10px;
     }
 }

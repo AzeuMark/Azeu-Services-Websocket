@@ -12,3 +12,9 @@
 +++ Fix the Remote server where if on stealth mode it no longer reconnects to the websocket regularly. The connection dies, I have to open Form1 again.
 In node js websocket instead of using the PC date and time use the websocket server time instead.
 Add a button in C# to change the machine name.
+
+
+
+
+
+Maybe let's deploy this on fly.io

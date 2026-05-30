@@ -92,6 +92,21 @@
                     <i class="bi bi-search"></i>
                     <input type="text" id="pc-search" placeholder="Search connected PCs...">
                 </div>
+                <div class="header-sort">
+                    <button class="sort-toggle-btn" id="sortMenuBtn" onclick="toggleSortMenu(event)" title="Sort PCs">
+                        <i class="bi bi-sort-down"></i> <span class="sort-label-text">Sort By</span>
+                    </button>
+                    <div class="sort-menu-content" id="sortMenu">
+                        <button onclick="setSort('name', 'asc')" class="sort-opt active" id="sort-opt-name-asc"><i class="bi bi-sort-alpha-down"></i> Name: A to Z</button>
+                        <button onclick="setSort('name', 'desc')" class="sort-opt" id="sort-opt-name-desc"><i class="bi bi-sort-alpha-up"></i> Name: Z to A</button>
+                        <button onclick="setSort('uptime', 'desc')" class="sort-opt" id="sort-opt-uptime-desc"><i class="bi bi-hourglass-split"></i> Uptime: Highest First</button>
+                        <button onclick="setSort('uptime', 'asc')" class="sort-opt" id="sort-opt-uptime-asc"><i class="bi bi-hourglass"></i> Uptime: Lowest First</button>
+                        <button onclick="setSort('afk', 'asc')" class="sort-opt" id="sort-opt-afk-asc"><i class="bi bi-person-check"></i> AFK: Active First</button>
+                        <button onclick="setSort('afk', 'desc')" class="sort-opt" id="sort-opt-afk-desc"><i class="bi bi-person-dash"></i> AFK: Inactive First</button>
+                        <button onclick="setSort('sync', 'desc')" class="sort-opt" id="sort-opt-sync-desc"><i class="bi bi-cloud-arrow-down"></i> Sync: Newest First</button>
+                        <button onclick="setSort('sync', 'asc')" class="sort-opt" id="sort-opt-sync-asc"><i class="bi bi-cloud-arrow-up"></i> Sync: Oldest First</button>
+                    </div>
+                </div>
                 <div class="header-actions">
                     <div id="connectionStatus" class="status-indicator online">
                         <span class="pulse"></span> <span class="status-text">Server Active</span>

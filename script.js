@@ -11,6 +11,9 @@ const inactiveContainer = document.getElementById('inactive-container');
 let currentTargetPC   = "";
 let currentLightboxPC = "";
 let currentLightboxSrc = "";
+let activePCs = [];
+let currentSortField = 'name';
+let currentSortOrder = 'asc';
 const pcStatusMap = new Map(); // Track active/inactive status
 const COOLDOWN_MS = 5000;
 const themeToggle = document.getElementById('themeToggle');
@@ -264,38 +267,44 @@ ws.onmessage = (e) => {
     const data = JSON.parse(e.data);
 
     if (data.type === "PC_LIST") {
-        if (!activeContainer) return;
-        activeContainer.innerHTML = '';
         pcStatusMap.clear();
-
         data.pcs.forEach(pc => {
             pcStatusMap.set(pc.name, { isActive: true, lastScreenshot: pc.fileName });
-            const card = createPCCard(pc);
-            activeContainer.appendChild(card);
         });
-
-        const activeCount = document.getElementById('active-count');
-        if (activeCount) activeCount.innerText = data.pcs.length;
-
-        if (activeContainer.children.length === 0) {
-            activeContainer.innerHTML = `
-                <div class="empty-state">
-                    <i class="bi bi-wifi-off"></i>
-                    <p>No active PCs connected</p>
-                </div>`;
-        }
-
+        activePCs = data.pcs;
+        renderActivePCs();
         displayInactivePCs();
     }
 
     if (data.type === "STATUS_UPDATE") {
+        const pcObj = activePCs.find(p => p.name === data.pc_name);
+        if (pcObj) {
+            pcObj.countdown = data.countdown;
+            pcObj.uptime = data.uptime;
+            pcObj.isLocked = data.isLocked;
+            if (data.lastDate) pcObj.lastDate = data.lastDate;
+            if (data.lastTime) pcObj.lastTime = data.lastTime;
+        }
+
         const timerEl = document.getElementById(`timer-${data.pc_name}`);
         const uptimeEl = document.getElementById(`uptime-${data.pc_name}`);
         if (timerEl)  timerEl.innerText  = data.countdown;
         if (uptimeEl) uptimeEl.innerText = data.uptime;
+
+        const dateEl = document.getElementById(`date-${data.pc_name}`);
+        const timeEl = document.getElementById(`time-${data.pc_name}`);
+        if (dateEl && data.lastDate) dateEl.innerText = data.lastDate;
+        if (timeEl && data.lastTime) timeEl.innerText = data.lastTime;
     }
 
     if (data.type === "SCREENSHOT_DATA") {
+        const pcObj = activePCs.find(p => p.name === data.pc_name);
+        if (pcObj) {
+            if (data.lastDate) pcObj.lastDate = data.lastDate;
+            if (data.lastTime) pcObj.lastTime = data.lastTime;
+            pcObj.fileName = data.image.split('?')[0].split('/').pop();
+        }
+
         const img = document.getElementById(`img-${data.pc_name}`);
         if (img) {
             img.src = data.image;
@@ -303,6 +312,11 @@ ws.onmessage = (e) => {
                 pcStatusMap.get(data.pc_name).lastScreenshot = data.image;
             }
         }
+
+        const dateEl = document.getElementById(`date-${data.pc_name}`);
+        const timeEl = document.getElementById(`time-${data.pc_name}`);
+        if (dateEl && data.lastDate) dateEl.innerText = data.lastDate;
+        if (timeEl && data.lastTime) timeEl.innerText = data.lastTime;
 
         if (currentLightboxPC === data.pc_name &&
             document.getElementById('lightbox').classList.contains('active')) {
@@ -321,6 +335,129 @@ ws.onmessage = (e) => {
         }
     }
 };
+
+/* ───────────────────────────────────────────
+   SORTING AND RENDERING SYSTEM
+─────────────────────────────────────────── */
+
+function parseTimeToSeconds(timeStr) {
+    if (!timeStr || timeStr === '-' || timeStr.toLowerCase().includes('connecting')) return 0;
+    
+    if (timeStr.includes('d') || timeStr.includes('h') || timeStr.includes('m') || timeStr.includes('s')) {
+        let totalSec = 0;
+        const dayMatch = timeStr.match(/(\d+)\s*d/);
+        const hourMatch = timeStr.match(/(\d+)\s*h/);
+        const minMatch = timeStr.match(/(\d+)\s*m/);
+        const secMatch = timeStr.match(/(\d+)\s*s/);
+        
+        if (dayMatch) totalSec += parseInt(dayMatch[1]) * 86400;
+        if (hourMatch) totalSec += parseInt(hourMatch[1]) * 3600;
+        if (minMatch) totalSec += parseInt(minMatch[1]) * 60;
+        if (secMatch) totalSec += parseInt(secMatch[1]);
+        return totalSec;
+    }
+    
+    const parts = timeStr.split(':').map(Number);
+    if (parts.length === 3) {
+        return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else if (parts.length === 2) {
+        return parts[0] * 60 + parts[1];
+    }
+    
+    const num = parseFloat(timeStr.replace(/[^\d.]/g, ''));
+    return isNaN(num) ? 0 : num;
+}
+
+function parseLastSync(dateStr, timeStr) {
+    if (!dateStr || dateStr === '-' || !timeStr || timeStr === '-') return new Date(0);
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        const formattedDate = `${parts[2]}-${parts[0]}-${parts[1]}`;
+        return new Date(`${formattedDate} ${timeStr}`);
+    }
+    return new Date(0);
+}
+
+function sortPCs(pcs, field, order) {
+    const sorted = [...pcs];
+    const isAsc = order === 'asc';
+    
+    sorted.sort((a, b) => {
+        let valA, valB;
+        
+        if (field === 'name') {
+            valA = a.name.toLowerCase();
+            valB = b.name.toLowerCase();
+            return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        } else if (field === 'uptime') {
+            valA = parseTimeToSeconds(a.uptime);
+            valB = parseTimeToSeconds(b.uptime);
+        } else if (field === 'afk') {
+            valA = parseTimeToSeconds(a.countdown);
+            valB = parseTimeToSeconds(b.countdown);
+        } else if (field === 'sync') {
+            valA = parseLastSync(a.lastDate, a.lastTime).getTime();
+            valB = parseLastSync(b.lastDate, b.lastTime).getTime();
+        }
+        
+        if (valA === valB) return 0;
+        return isAsc ? (valA - valB) : (valB - valA);
+    });
+    
+    return sorted;
+}
+
+function renderActivePCs() {
+    if (!activeContainer) return;
+    
+    const searchInput = document.getElementById('pc-search');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    
+    const filtered = activePCs.filter(pc => !query || pc.name.toLowerCase().includes(query));
+    const sorted = sortPCs(filtered, currentSortField, currentSortOrder);
+    
+    activeContainer.innerHTML = '';
+    
+    sorted.forEach(pc => {
+        const card = createPCCard(pc);
+        activeContainer.appendChild(card);
+    });
+    
+    const activeCount = document.getElementById('active-count');
+    if (activeCount) activeCount.innerText = sorted.length;
+    
+    if (sorted.length === 0) {
+        activeContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="bi bi-wifi-off"></i>
+                <p>${query ? 'No matching PCs found' : 'No active PCs connected'}</p>
+            </div>`;
+    }
+}
+
+function toggleSortMenu(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('sortMenu');
+    if (menu) {
+        menu.classList.toggle('show');
+    }
+}
+
+function setSort(field, order) {
+    currentSortField = field;
+    currentSortOrder = order;
+    
+    document.querySelectorAll('.sort-opt').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.getElementById(`sort-opt-${field}-${order}`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
+    
+    const menu = document.getElementById('sortMenu');
+    if (menu) menu.classList.remove('show');
+    
+    renderActivePCs();
+}
 
 /* ───────────────────────────────────────────
    CARD RENDERING
@@ -645,12 +782,7 @@ function openLightbox(pc, src) {
 const searchInput = document.getElementById('pc-search');
 if (searchInput) {
     searchInput.addEventListener('input', () => {
-        const q = searchInput.value.toLowerCase().trim();
-        document.querySelectorAll('.card').forEach(card => {
-            const name = card.querySelector('.pc-name');
-            if (!name) return;
-            card.style.display = (!q || name.textContent.toLowerCase().includes(q)) ? '' : 'none';
-        });
+        renderActivePCs();
     });
 }
 
@@ -661,6 +793,11 @@ if (searchInput) {
 window.onclick = function(event) {
     if (!event.target.matches('.dropdown-toggle') && !event.target.closest('.dropdown-toggle')) {
         document.querySelectorAll('.menu-content').forEach(m => m.classList.remove('show'));
+    }
+
+    if (!event.target.matches('#sortMenuBtn') && !event.target.closest('#sortMenuBtn')) {
+        const sortMenu = document.getElementById('sortMenu');
+        if (sortMenu) sortMenu.classList.remove('show');
     }
 
     // Modal background auto-close

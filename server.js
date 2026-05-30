@@ -70,6 +70,29 @@ function sendPCCommand(pcName, command, content = "") {
     return false;
 }
 
+function getManilaDateTime() {
+    const now = new Date();
+    
+    // Date part: MM-DD-YYYY
+    const dStr = now.toLocaleDateString('en-US', {
+        timeZone: 'Asia/Manila',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).replace(/\//g, '-');
+    
+    // Time part: hh:mm:ss AM/PM
+    const tStr = now.toLocaleTimeString('en-US', {
+        timeZone: 'Asia/Manila',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    });
+    
+    return { date: dStr, time: tStr };
+}
+
 // --- FILE STORAGE LOGIC ---
 
 function handleScreenshotStorage(pcName, base64Image, date, time) {
@@ -181,13 +204,14 @@ wss.on('connection', (ws) => {
                     if (data.token !== SECURITY_TOKEN) { ws.terminate(); return; }
                     pcName = data.pc_name;
                     const saved = getExistingScreenshotInfo(pcName);
+                    const connManila = getManilaDateTime();
                     connectedPCs.set(pcName, { 
                         socket: ws, 
                         countdown: "Connecting...", 
                         uptime: "-", 
                         isLocked: false,
-                        lastDate: saved.date, 
-                        lastTime: saved.time, 
+                        lastDate: saved.fileName ? saved.date : connManila.date, 
+                        lastTime: saved.fileName ? saved.time : connManila.time, 
                         fileName: saved.fileName,
                         screenshotPending: false
                     });
@@ -208,22 +232,33 @@ wss.on('connection', (ws) => {
                         pc.countdown = data.countdown;
                         pc.uptime = data.uptime;
                         pc.isLocked = data.isLocked;
+                        
+                        const statusManila = getManilaDateTime();
+                        pc.lastDate = statusManila.date;
+                        pc.lastTime = statusManila.time;
+                        
+                        // Inject into broadcast data for active dashboards
+                        data.lastDate = statusManila.date;
+                        data.lastTime = statusManila.time;
                     }
                     broadcastToDashboards(data);
                     break;
 
                 case "SCREENSHOT_DATA":
-                    const fn = handleScreenshotStorage(data.pc_name, data.image, data.date, data.time);
+                    const shotManila = getManilaDateTime();
+                    const fn = handleScreenshotStorage(data.pc_name, data.image, shotManila.date, shotManila.time);
                     const cPC = connectedPCs.get(data.pc_name);
                     if (cPC) {
                         cPC.screenshotPending = false;
                         if (fn) {
-                            cPC.lastDate = data.date;
-                            cPC.lastTime = data.time;
+                            cPC.lastDate = shotManila.date;
+                            cPC.lastTime = shotManila.time;
                             cPC.fileName = fn;
                         }
                     }
                     data.image = `/screenshots/${fn}?t=${Date.now()}`;
+                    data.lastDate = shotManila.date;
+                    data.lastTime = shotManila.time;
                     broadcastToDashboards(data);
                     break;
 
